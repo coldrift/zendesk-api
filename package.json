@@ -1,0 +1,19 @@
+{
+  "name": "@coldrift/zendesk-api",
+  "version": "0.1.0",
+  "description": "Node.JS Zenddesk API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "zendesk",
+    "api",
+    "rest"
+  ],
+  "author": "Valery Kholodkov",
+  "license": "MIT",
+  "dependencies": {
+    "bluebird": "^3.5.3"
+  }
+}
