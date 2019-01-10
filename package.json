@@ -1,8 +1,8 @@
 {
   "name": "@coldrift/zendesk-api",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Node.JS Zenddesk API",
-  "main": "index.js",
+  "main": "lib/zendesk.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
