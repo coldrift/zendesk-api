@@ -1,6 +1,6 @@
 {
   "name": "@coldrift/zendesk-api",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Node.JS Zendesk API",
   "repository": {
     "type" : "git",
