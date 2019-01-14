@@ -1,8 +1,22 @@
 
-import assign from 'lodash/assign';
 import request from 'request-promise';
+import base64 from 'base-64';
 
 const API_PREFIX = '/api/v2'
+
+function assign(object, from) {
+  var r = {}
+
+  for(let key in object) {
+    r[key] = object[key]
+  }
+
+  for(let key in from) {
+    r[key] = from[key]
+  }
+
+  return r;
+}
 
 function stringifyArray(a) {
   return Array.isArray(a) ? a.join(',') : a;
@@ -27,8 +41,8 @@ class Zendesk {
         throw new Error('You must specify Zendesk email')
       }
 
-      this.authorization = 'Basic ' + Buffer.from(
-        options.email + '/token:' + options.token).toString('base64')
+      this.authorization = 'Basic ' + base64.encode(
+        options.email + '/token:' + options.token)
     }
     else {
       this.authorization = `Bearer ${options.token}`
