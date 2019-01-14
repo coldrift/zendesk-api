@@ -1,27 +1,10 @@
 
-'use strict'
+import assign from 'lodash/assign';
 
-const Promise = require('bluebird')
-const URL = require('url')
-const querystring = require('querystring')
-const https = require('https')
+import Promise from 'bluebird';
+import request from 'request-promise';
 
-const DEFAULT_TIMEOUT = 30 * 1000;
 const API_PREFIX = '/api/v2'
-
-function assign(object, from) {
-  var r = {}
-
-  for(let key in object) {
-    r[key] = object[key]
-  }
-
-  for(let key in from) {
-    r[key] = from[key]
-  }
-
-  return r;
-}
 
 function stringifyArray(a) {
   return Array.isArray(a) ? a.join(',') : a;
@@ -35,7 +18,7 @@ class Zendesk {
       throw new Error('You must specify Zendesk URL')
     }
 
-    this.base_url = URL.parse(options.url)
+    this.base_url = options.url
 
     if(!options.token) {
       throw new Error('You must specify Zendesk access token')
@@ -53,8 +36,6 @@ class Zendesk {
       this.authorization = `Bearer ${options.token}`
     }
     
-    this.agent = new https.Agent({keepAlive: true})
-
     const accessor = (promise, path) => {
       return promise.then(result => {
         return result[path]
@@ -108,88 +89,26 @@ class Zendesk {
     this.search = createMethods('search', 'search')('')
   }
 
-  _request(method, path, params, cb) {
-    let options = {}
-    var trace = {};
-    var request_body
+  _request(method, path, params) {
+    let options = {
+        method,
+        uri: this.base_url + API_PREFIX + path,
+        headers: {
+          authorization: this.authorization,
+          accept: 'application/json;q=0.9,text/plain',
+        },
+        json: true
+    };
 
-    options.protocol = this.base_url.protocol
-    options.host = this.base_url.host
-    options.hostname = this.base_url.hostname
-    options.port = this.base_url.port
-
-    options.agent = this.agent
-    options.path = API_PREFIX + path + (method === 'GET' && (typeof(params) === 'object') ?
-      '?' + querystring.stringify(params) : '');
-    options.method = method;
-    options.headers = {}
-
-    options.headers['Authorization'] = this.authorization
-    options.headers['Accept'] = 'application/json;q=0.9,text/plain'
-
-    if(method === 'POST' || method === 'PUT') {
-      request_body = Buffer.from(JSON.stringify(params || {}))
-      options.headers['Content-Type'] = 'application/json'
-      options.headers['Content-Length'] = request_body.length
+    if(method === 'GET') {
+      options.qs = params
+    }
+    else if(method === 'POST' || method === 'PUT') {
+      options.headers['content-type'] = 'application/json'
+      options.body = params
     }
 
-    let request = https.request(options)
-
-    var body = null;
-
-    var timer = null;
-
-    request.on('response', response => {
-
-      response.on('data', data => {
-        clearTimeout(timer);
-        body = body ? Buffer.concat([body, data]) : data;
-      });
-
-      response.on('end', () => {
-        clearTimeout(timer);
-
-        if(!body) {
-          return cb(new Error('Empty reply from Zendesk'));
-        }
-
-        if(response.statusCode >= 200 && response.statusCode < 300) {
-          try {
-            cb(null, JSON.parse(body.toString()))
-          }
-          catch(err) {
-            cb(err)
-          }
-        }
-        else {
-          return cb(new Error(response.statusMessage));
-        }
-      });
-    });
-
-    request.on('error', err => {
-      clearTimeout(timer);
-      let error = err instanceof Error ? err : new Error(error)
-      error.stack = trace.stack
-      cb(error);
-    });
-
-    if(request_body) {
-      request.write(request_body);
-    }
-
-    request.end();
-
-    var timer = setTimeout(function() {
-      request.abort();
-      let error = new Error('Timeout')
-      error.stack = trace.stack
-      cb(error);
-    }, options.timeout || DEFAULT_TIMEOUT);
-  }
-
-  _request_promisified(method, path, params) {
-    return Promise.fromCallback(cb => this._request(method, path, params, cb))
+    return request(options)
   }
 
   _parse_params(params) {
@@ -198,24 +117,24 @@ class Zendesk {
   }
 
   _list(path, params) {
-    return this._request_promisified('GET', path,
+    return this._request('GET', path,
       this._parse_params(params))
   }
 
   _show(path, params) {
-    return this._request_promisified('GET', path, params)
+    return this._request('GET', path, params)
   }
 
   _create(path, params) {
-    return this._request_promisified('POST', path, params)
+    return this._request('POST', path, params)
   }
 
   _update(path, params) {
-    return this._request_promisified('PUT', path, params)
+    return this._request('PUT', path, params)
   }
 
   _delete(path, object_id) {
-    return this._request_promisified('DELETE', path, null)
+    return this._request('DELETE', path, null)
   }
 }
 
