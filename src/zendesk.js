@@ -57,35 +57,34 @@ class Zendesk {
       })
     }
 
-    const createMethods = (singular, plural) => {
-      return prefix => {
-        return {
-          list: (params) => accessor(this._list(`${prefix}/${plural}.json`, params), plural),
-          show: (id, params) => accessor(this._show(`${prefix}/${plural}/${id}.json`, params), singular),
-          showMany: (ids, params) => accessor(this._list(`${prefix}/${plural}/show_many.json`,
-            assign(params, {ids: stringifyArray(ids)})), plural),
-          create: (params) => accessor(this._create(`${prefix}/${plural}.json`, {[singular]: params}), singular),
-          update: (id, params) => accessor(this._update(`${prefix}/${plural}/${id}.json`, {[singular]: params}), singular),
-          delete: (id) => this._delete(`${prefix}/${plural}/${id}.json`, id),
-        }
-      };
-    }
+    const createMethods = (singular, plural) => prefix => ({
+      list: (params) => accessor(this._list(`${prefix}/${plural}.json`, params), plural),
+      show: (id, params) => accessor(this._show(`${prefix}/${plural}/${id}.json`, params), singular),
+      showMany: (ids, params) => accessor(this._list(`${prefix}/${plural}/show_many.json`,
+        assign(params, {ids: stringifyArray(ids)})), plural),
+      create: (params) => accessor(this._create(`${prefix}/${plural}.json`, {[singular]: params}), singular),
+      update: (id, params) => accessor(this._update(`${prefix}/${plural}/${id}.json`, {[singular]: params}), singular),
+      delete: (id) => this._delete(`${prefix}/${plural}/${id}.json`, id),
+    })
 
-    const createEncapsulator = (plural, objects) => {
-      return parent_id => {
-        let v = {}
+    const createEncapsulator = (plural, objects) => parent_id => {
+      let v = {}
 
-        for(let key in objects) {
-          v[key] = objects[key](`/${plural}/${parent_id}`)
-        }
+      for(let key in objects) {
+        v[key] = objects[key](`/${plural}/${parent_id}`)
+      }
 
-        return v;
-      };
-    }
+      return v;
+    };
 
     this.tickets = createMethods('ticket', 'tickets')('')
     this.ticket = createEncapsulator('tickets', {
-      comments: createMethods('comment', 'comments')
+      comments: prefix => ({
+        list: (params) => accessor(this._list(`${prefix}/comments.json`, params), 'comments'),
+        create: (params) => accessor(this._create(`${prefix}.json`, {tickets: {comment: params}}), 'comment'),
+        redact: (id, params) => accessor(this._update(`${prefix}/comments/${id}/redact.json`, params), 'comment'),
+        make_private: (id) => this._update(`${prefix}/comments/${id}/make_private.json`, {}),
+      })
     })
     this.ticketFields = createMethods('ticket_field', 'ticket_fields')('')
     this.organizations = createMethods('organization', 'organizations')('')
@@ -94,7 +93,11 @@ class Zendesk {
     })
     this.users = createMethods('user', 'users')('')
     this.user = createEncapsulator('users', {
-      tickets: createMethods('ticket', 'tickets')
+      tickets: prefix => ({
+        requested: (params) => accessor(this._list(`${prefix}/tickets/requested.json`, params), 'tickets'),
+        ccd: (params) => accessor(this._list(`${prefix}/tickets/ccd.json`, params), 'tickets'),
+        assigned: (params) => accessor(this._list(`${prefix}/tickets/assigned.json`, params), 'tickets'),
+      })
     })
     this.userFields = createMethods('user_field', 'users_fields')('')
     this.macros = createMethods('macro', 'macros')('')
