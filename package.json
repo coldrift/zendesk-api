@@ -1,6 +1,6 @@
 {
   "name": "@coldrift/zendesk-api",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Node.JS Zendesk API",
   "repository": {
     "type": "git",
@@ -25,7 +25,6 @@
   "author": "Valery Kholodkov",
   "license": "MIT",
   "dependencies": {
-    "bluebird": "^3.5.3",
     "lodash": "^4.17.11",
     "request": "^2.88.0",
     "request-promise": "^4.2.2"

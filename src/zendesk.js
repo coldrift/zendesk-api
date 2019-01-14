@@ -1,7 +1,5 @@
 
 import assign from 'lodash/assign';
-
-import Promise from 'bluebird';
 import request from 'request-promise';
 
 const API_PREFIX = '/api/v2'
@@ -41,7 +39,7 @@ class Zendesk {
         return result[path]
       })
       .catch(err => {
-        return Promise.reject(new Error(err.message))
+        throw new Error(err.message)
       })
     }
 
@@ -92,7 +90,7 @@ class Zendesk {
   _request(method, path, params) {
     let options = {
         method,
-        uri: this.base_url + API_PREFIX + path,
+        uri: this.base_url + API_PREFIX + path + (typeof(params) === 'string' ? '?' + params : ''),
         headers: {
           authorization: this.authorization,
           accept: 'application/json;q=0.9,text/plain',
@@ -101,7 +99,9 @@ class Zendesk {
     };
 
     if(method === 'GET') {
-      options.qs = params
+      if(typeof(params) === 'object') {
+        options.qs = params
+      }
     }
     else if(method === 'POST' || method === 'PUT') {
       options.headers['content-type'] = 'application/json'
@@ -111,14 +111,8 @@ class Zendesk {
     return request(options)
   }
 
-  _parse_params(params) {
-    return (typeof(params) === 'string') ?
-      querystring.parse(params) : params
-  }
-
   _list(path, params) {
-    return this._request('GET', path,
-      this._parse_params(params))
+    return this._request('GET', path, params)
   }
 
   _show(path, params) {
